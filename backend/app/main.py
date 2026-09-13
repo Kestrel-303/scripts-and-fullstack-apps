@@ -30,7 +30,7 @@ app = FastAPI(
 )
 
 # Parse allowed origins from environment variable with local fallback
-frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+frontend_url = os.getenv("FRONTEND_URL", "https://scripts-and-fullstack-apps-6az8.vercel.app/")
 allowed_origins = [
     origin.strip() for origin in frontend_url.split(",") if origin.strip()
 ]
