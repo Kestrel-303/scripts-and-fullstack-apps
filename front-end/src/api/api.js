@@ -1,11 +1,10 @@
 import axios from 'axios';
 
-/**
- * Custom Axios instance targeting the FastAPI backend.
- * Base URL defaults to http://localhost:8000
- */
+// Dynamically target Vite env variable in production, falling back to localhost for dev
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -44,6 +43,9 @@ api.interceptors.response.use(
       console.warn('Unauthorized request! Clearing stored token.');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+
+      // Optional: Redirect user to login page when unauthenticated
+      // window.location.href = '/login';
     }
     return Promise.reject(error);
   }

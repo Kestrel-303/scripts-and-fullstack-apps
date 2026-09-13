@@ -1,5 +1,6 @@
 import os
 import sys
+from contextlib import asynccontextmanager
 
 # Ensure root directory is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -14,19 +15,29 @@ except ImportError:
     from app.database import engine, Base
     from app.routers import auth, parent, teacher, admin, student
 
-# Create database tables if they do not exist
-Base.metadata.create_all(bind=engine)
+# Lifespan context manager for database table creation on startup
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Run table creation on startup
+    Base.metadata.create_all(bind=engine)
+    yield
 
 app = FastAPI(
     title="School Management System API",
     description="Parent & Student Portal Backend API with Role-Based Access Control",
     version="1.0.0",
+    lifespan=lifespan
 )
 
-# CORS Middleware configuration for React frontend communication
+# Parse allowed origins from environment variable with local fallback
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+allowed_origins = [
+    origin.strip() for origin in frontend_url.split(",") if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
