@@ -9,10 +9,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 try:
-    from backend.app.database import engine, Base
+    from backend.app.database import engine, Base, SessionLocal
     from backend.app.routers import auth, parent, teacher, admin, student
 except ImportError:
-    from app.database import engine, Base
+    from app.database import engine, Base, SessionLocal
     from app.routers import auth, parent, teacher, admin, student
 
 # Lifespan context manager for database table creation on startup
@@ -20,6 +20,20 @@ except ImportError:
 async def lifespan(app: FastAPI):
     # Run table creation on startup
     Base.metadata.create_all(bind=engine)
+
+    # One-time convenience seed, gated behind an env var so it's opt-in and
+    # never runs unintentionally against a database that already has data.
+    if os.getenv("SEED_ON_STARTUP", "false").lower() == "true":
+        try:
+            from backend.app.seed_data import seed_data
+        except ImportError:
+            from app.seed_data import seed_data
+        db = SessionLocal()
+        try:
+            seed_data(db)
+        finally:
+            db.close()
+
     yield
 
 app = FastAPI(
@@ -55,6 +69,7 @@ app.include_router(student.router)
 
 
 @app.get("/")
+@app.head("/")
 def read_root():
     return {
         "app": "School Management System API",
